@@ -291,6 +291,8 @@ def _render_visual_editor(default_value: str) -> str:
 def _ensure_session_defaults() -> None:
     if "raw_html_input" not in st.session_state:
         st.session_state.raw_html_input = ""
+    if "html_source_input" not in st.session_state:
+        st.session_state.html_source_input = ""
     if "cleaned_html" not in st.session_state:
         st.session_state.cleaned_html = ""
 
@@ -353,22 +355,20 @@ def main() -> None:
             st.session_state.raw_html_input = visual_html or ""
             st.session_state.cleaned_html = sanitize_html(st.session_state.raw_html_input)
         else:
-            with st.form("html_code_input_form", clear_on_submit=False):
-                source_html = st.text_area(
-                    "Paste raw HTML",
-                    value=st.session_state.raw_html_input,
-                    height=editor_height,
-                    key="html_source",
-                    placeholder="<p dir=\"ltr\"><span style=\"font-size:14pt\">...</span></p>",
-                )
-                run_clean = st.form_submit_button(
-                    "Clean Inline HTML Codes",
-                    use_container_width=True,
-                    type="primary",
-                )
-                if run_clean:
-                    st.session_state.raw_html_input = source_html
-                    st.session_state.cleaned_html = sanitize_html(source_html)
+            source_html = st.text_area(
+                "Paste raw HTML",
+                height=editor_height,
+                key="html_source_input",
+                placeholder="<p dir=\"ltr\"><span style=\"font-size:14pt\">...</span></p>",
+            )
+            run_clean = st.button(
+                "Clean Inline HTML Codes",
+                use_container_width=True,
+                type="primary",
+            )
+            if run_clean:
+                st.session_state.raw_html_input = source_html
+                st.session_state.cleaned_html = sanitize_html(source_html)
 
     raw_html = st.session_state.raw_html_input
     cleaned_html = st.session_state.cleaned_html
@@ -381,7 +381,6 @@ def main() -> None:
             "Clean HTML (multiline)",
             value=readable_html,
             height=editor_height,
-            key="sanitized_output_multiline",
             disabled=True,
         )
         st.download_button(
