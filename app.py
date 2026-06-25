@@ -201,43 +201,43 @@ def _preview_html_shell(content: str) -> str:
 
 
 def _copy_button_component(content: str) -> str:
-        payload = json.dumps(content)
-        return f"""
-        <div style=\"margin: 0.25rem 0 0.75rem 0;\">
-            <button id=\"copy-clean-html\" style=\"
-                background:#0b1220;
-                color:#e5e7eb;
-                border:1px solid #334155;
-                border-radius:10px;
-                padding:10px 14px;
-                font-size:14px;
-                font-weight:600;
-                cursor:pointer;
-            \">Copy Sanitized HTML</button>
-            <span id=\"copy-status\" style=\"margin-left:10px;color:#16a34a;font-size:13px;\"></span>
-        </div>
-        <script>
-            const textToCopy = {payload};
-            const btn = document.getElementById('copy-clean-html');
-            const status = document.getElementById('copy-status');
+    payload = json.dumps(content)
+    return f"""
+    <div style=\"margin: 0.25rem 0 0.75rem 0;\">
+        <button id=\"copy-clean-html\" style=\"
+            background:#0b1220;
+            color:#e5e7eb;
+            border:1px solid #334155;
+            border-radius:10px;
+            padding:10px 14px;
+            font-size:14px;
+            font-weight:600;
+            cursor:pointer;
+        \">Copy Sanitized HTML</button>
+        <span id=\"copy-status\" style=\"margin-left:10px;color:#16a34a;font-size:13px;\"></span>
+    </div>
+    <script>
+        const textToCopy = {payload};
+        const btn = document.getElementById('copy-clean-html');
+        const status = document.getElementById('copy-status');
 
-            btn.onclick = async () => {{
-                if (!textToCopy) {{
-                    status.textContent = 'Nothing to copy yet.';
-                    status.style.color = '#ef4444';
-                    return;
-                }}
-                try {{
-                    await navigator.clipboard.writeText(textToCopy);
-                    status.textContent = 'Copied';
-                    status.style.color = '#16a34a';
-                }} catch (err) {{
-                    status.textContent = 'Copy failed. Use Command+C from the output box.';
-                    status.style.color = '#ef4444';
-                }}
-            }};
-        </script>
-        """
+        btn.onclick = async () => {{
+            if (!textToCopy) {{
+                status.textContent = 'Nothing to copy yet.';
+                status.style.color = '#ef4444';
+                return;
+            }}
+            try {{
+                await navigator.clipboard.writeText(textToCopy);
+                status.textContent = 'Copied';
+                status.style.color = '#16a34a';
+            }} catch (err) {{
+                status.textContent = 'Copy failed. Use Command+C from the output box.';
+                status.style.color = '#ef4444';
+            }}
+        }};
+    </script>
+    """
 
 
 def _render_visual_editor(default_value: str) -> str:
@@ -327,6 +327,7 @@ def main() -> None:
                 height=380,
                 key="html_source",
                 placeholder="<p dir=\"ltr\"><span style=\"font-size:14pt\">...</span></p>",
+                help="After pasting in HTML mode, press Command+Enter (or Ctrl+Enter) to apply instantly.",
             )
 
     raw_html = st.session_state.raw_html
@@ -336,13 +337,8 @@ def main() -> None:
     with right_col:
         st.subheader("Sanitized Output")
         html_component(_copy_button_component(cleaned_html), height=60)
-        st.text_area(
-            "Clean HTML (multiline)",
-            value=readable_html,
-            height=420,
-            disabled=True,
-            key="sanitized_output_multiline",
-        )
+        st.caption("Clean HTML (multiline)")
+        st.code(readable_html or "", language="html")
         st.download_button(
             "Download Clean HTML",
             data=cleaned_html.encode("utf-8"),
