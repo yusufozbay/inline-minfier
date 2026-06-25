@@ -9,6 +9,7 @@ Optional alternative rich editor:
 
 from __future__ import annotations
 
+import json
 import re
 
 import streamlit as st
@@ -199,6 +200,46 @@ def _preview_html_shell(content: str) -> str:
     """
 
 
+def _copy_button_component(content: str) -> str:
+        payload = json.dumps(content)
+        return f"""
+        <div style=\"margin: 0.25rem 0 0.75rem 0;\">
+            <button id=\"copy-clean-html\" style=\"
+                background:#0b1220;
+                color:#e5e7eb;
+                border:1px solid #334155;
+                border-radius:10px;
+                padding:10px 14px;
+                font-size:14px;
+                font-weight:600;
+                cursor:pointer;
+            \">Copy Sanitized HTML</button>
+            <span id=\"copy-status\" style=\"margin-left:10px;color:#16a34a;font-size:13px;\"></span>
+        </div>
+        <script>
+            const textToCopy = {payload};
+            const btn = document.getElementById('copy-clean-html');
+            const status = document.getElementById('copy-status');
+
+            btn.onclick = async () => {{
+                if (!textToCopy) {{
+                    status.textContent = 'Nothing to copy yet.';
+                    status.style.color = '#ef4444';
+                    return;
+                }}
+                try {{
+                    await navigator.clipboard.writeText(textToCopy);
+                    status.textContent = 'Copied';
+                    status.style.color = '#16a34a';
+                }} catch (err) {{
+                    status.textContent = 'Copy failed. Use Command+C from the output box.';
+                    status.style.color = '#ef4444';
+                }}
+            }};
+        </script>
+        """
+
+
 def _render_visual_editor(default_value: str) -> str:
     if st_quill is None:
         st.warning(
@@ -294,6 +335,7 @@ def main() -> None:
 
     with right_col:
         st.subheader("Sanitized Output")
+        html_component(_copy_button_component(cleaned_html), height=60)
         st.text_area(
             "Clean HTML (multiline)",
             value=readable_html,
