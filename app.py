@@ -144,6 +144,28 @@ def _remove_empty_inline_tags(soup: BeautifulSoup) -> None:
                 tag.decompose()
 
 
+def _simplify_redundant_markup(soup: BeautifulSoup) -> None:
+    # Headings are already semantic emphasis; nested inline emphasis tags are redundant.
+    for heading in soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"]):
+        for inline in list(heading.find_all(["strong", "b", "em", "i", "u"])):
+            inline.unwrap()
+
+    # When a paragraph contains only an image wrapped by inline emphasis tags,
+    # unwrap those tags to keep output minimal: <p><strong><img ...></strong></p> -> <p><img ...></p>
+    for para in soup.find_all("p"):
+        direct_tags = [child for child in para.children if isinstance(child, Tag)]
+        if len(direct_tags) != 1:
+            continue
+        wrapper = direct_tags[0]
+        if wrapper.name not in {"strong", "b", "em", "i", "u"}:
+            continue
+
+        para_text = para.get_text("", strip=True).replace("\xa0", "")
+        has_img = bool(wrapper.find("img"))
+        if not para_text and has_img:
+            wrapper.unwrap()
+
+
 def _post_regex_cleanup(html: str) -> str:
     html = re.sub(r"<p>(?:\s|&nbsp;|\xa0|<br\s*/?>)*</p>", "", html, flags=re.IGNORECASE)
     html = re.sub(
@@ -169,6 +191,7 @@ def sanitize_html(raw_html: str) -> str:
     _remove_disallowed_tags(root, ALLOWED_TAGS)
     _unwrap_styling_containers(root)
     _clean_all_attributes(root)
+    _simplify_redundant_markup(root)
     _remove_empty_inline_tags(root)
     _remove_empty_blocks(root)
 
@@ -185,10 +208,8 @@ def _format_html_for_multiline_output(cleaned_html: str) -> str:
     if not cleaned_html:
         return ""
 
-    # Split adjacent tags onto new lines for editor-friendly readability.
-    readable = re.sub(r"><", ">\n<", cleaned_html)
-    readable = re.sub(r"\n{3,}", "\n\n", readable)
-    return readable.strip()
+    # Keep output compact; line wrapping is handled by the UI renderer.
+    return cleaned_html.strip()
 
 
 def _preview_html_shell(content: str) -> str:
