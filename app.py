@@ -208,8 +208,15 @@ def _format_html_for_multiline_output(cleaned_html: str) -> str:
     if not cleaned_html:
         return ""
 
-    # Keep output compact; line wrapping is handled by the UI renderer.
-    return cleaned_html.strip()
+    # Keep output compact but readable by splitting around structural blocks.
+    multiline = re.sub(
+        r">\s*<(p|h1|h2|h3|h4|h5|h6|ul|ol|li|table|thead|tbody|tfoot|tr|td|th|hr)",
+        r">\n<\1",
+        cleaned_html,
+        flags=re.IGNORECASE,
+    )
+    multiline = re.sub(r"\n{3,}", "\n\n", multiline)
+    return multiline.strip()
 
 
 def _preview_html_shell(content: str) -> str:
@@ -337,6 +344,14 @@ def main() -> None:
     with left_col:
         st.subheader("Input")
         mode = _input_mode_selector()
+        editor_height = st.slider(
+            "Editor Height",
+            min_value=260,
+            max_value=900,
+            value=420,
+            step=20,
+            help="Resize both input and sanitized output editors.",
+        )
 
         if mode == "📝 Visual Rich Text":
             visual_html = _render_visual_editor(st.session_state.raw_html)
@@ -345,7 +360,7 @@ def main() -> None:
             st.session_state.raw_html = st.text_area(
                 "Paste raw HTML",
                 value=st.session_state.raw_html,
-                height=380,
+                height=editor_height,
                 key="html_source",
                 placeholder="<p dir=\"ltr\"><span style=\"font-size:14pt\">...</span></p>",
                 help="After pasting in HTML mode, press Command+Enter (or Ctrl+Enter) to apply instantly.",
@@ -358,8 +373,13 @@ def main() -> None:
     with right_col:
         st.subheader("Sanitized Output")
         html_component(_copy_button_component(cleaned_html), height=60)
-        st.caption("Clean HTML (multiline)")
-        st.code(readable_html or "", language="html")
+        st.text_area(
+            "Clean HTML (multiline)",
+            value=readable_html,
+            height=editor_height,
+            key="sanitized_output_multiline",
+            disabled=True,
+        )
         st.download_button(
             "Download Clean HTML",
             data=cleaned_html.encode("utf-8"),
