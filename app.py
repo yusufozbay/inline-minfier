@@ -124,16 +124,33 @@ def _clean_all_attributes(soup: BeautifulSoup) -> None:
 
 def _remove_empty_blocks(soup: BeautifulSoup) -> None:
     block_tags = ["p", "li", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6"]
+    meaningful_media = ["img", "table", "ul", "ol", "hr"]
     for name in block_tags:
         for tag in list(soup.find_all(name)):
             text = tag.get_text("", strip=True).replace("\xa0", "")
-            has_non_text_media = bool(tag.find(["img", "br", "hr", "table", "ul", "ol"]))
-            if not text and not has_non_text_media:
+            has_meaningful_media = bool(tag.find(meaningful_media))
+            if not text and not has_meaningful_media:
+                tag.decompose()
+
+
+def _remove_empty_inline_tags(soup: BeautifulSoup) -> None:
+    inline_tags = ["strong", "b", "em", "i", "u", "a"]
+    for name in inline_tags:
+        for tag in list(soup.find_all(name)):
+            text = tag.get_text("", strip=True).replace("\xa0", "")
+            has_meaningful_media = bool(tag.find(["img"]))
+            if not text and not has_meaningful_media:
                 tag.decompose()
 
 
 def _post_regex_cleanup(html: str) -> str:
     html = re.sub(r"<p>(?:\s|&nbsp;|\xa0|<br\s*/?>)*</p>", "", html, flags=re.IGNORECASE)
+    html = re.sub(
+        r"<p>\s*(?:<(?:strong|b|em|i|u|a)>\s*)*(?:<br\s*/?>\s*)*(?:</(?:strong|b|em|i|u|a)>\s*)*</p>",
+        "",
+        html,
+        flags=re.IGNORECASE,
+    )
     html = re.sub(r"(?:<br\s*/?>\s*){3,}", "<br><br>", html, flags=re.IGNORECASE)
     html = re.sub(r"\n{3,}", "\n\n", html)
     html = re.sub(r">\s+<", "><", html)
@@ -151,6 +168,7 @@ def sanitize_html(raw_html: str) -> str:
     _remove_disallowed_tags(root, ALLOWED_TAGS)
     _unwrap_styling_containers(root)
     _clean_all_attributes(root)
+    _remove_empty_inline_tags(root)
     _remove_empty_blocks(root)
 
     # Use inner HTML so we don't emit html/head/body wrappers.
