@@ -289,8 +289,8 @@ def _render_visual_editor(default_value: str) -> str:
 
 
 def _ensure_session_defaults() -> None:
-    if "raw_html" not in st.session_state:
-        st.session_state.raw_html = ""
+    if "raw_html_input" not in st.session_state:
+        st.session_state.raw_html_input = ""
     if "cleaned_html" not in st.session_state:
         st.session_state.cleaned_html = ""
 
@@ -349,14 +349,14 @@ def main() -> None:
         mode = _input_mode_selector()
 
         if mode == "📝 Visual Rich Text":
-            visual_html = _render_visual_editor(st.session_state.raw_html)
-            st.session_state.raw_html = visual_html or ""
-            st.session_state.cleaned_html = sanitize_html(st.session_state.raw_html)
+            visual_html = _render_visual_editor(st.session_state.raw_html_input)
+            st.session_state.raw_html_input = visual_html or ""
+            st.session_state.cleaned_html = sanitize_html(st.session_state.raw_html_input)
         else:
             with st.form("html_code_input_form", clear_on_submit=False):
-                st.session_state.raw_html = st.text_area(
+                source_html = st.text_area(
                     "Paste raw HTML",
-                    value=st.session_state.raw_html,
+                    value=st.session_state.raw_html_input,
                     height=editor_height,
                     key="html_source",
                     placeholder="<p dir=\"ltr\"><span style=\"font-size:14pt\">...</span></p>",
@@ -367,9 +367,10 @@ def main() -> None:
                     type="primary",
                 )
                 if run_clean:
-                    st.session_state.cleaned_html = sanitize_html(st.session_state.raw_html)
+                    st.session_state.raw_html_input = source_html
+                    st.session_state.cleaned_html = sanitize_html(source_html)
 
-    raw_html = st.session_state.raw_html
+    raw_html = st.session_state.raw_html_input
     cleaned_html = st.session_state.cleaned_html
     readable_html = _format_html_for_multiline_output(cleaned_html)
 
