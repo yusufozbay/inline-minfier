@@ -314,6 +314,7 @@ def _input_mode_selector() -> str:
 def main() -> None:
     st.set_page_config(page_title="HTML Cleaner", layout="wide")
     _ensure_session_defaults()
+    editor_height = 420
 
     st.markdown(
         """
@@ -344,14 +345,6 @@ def main() -> None:
     with left_col:
         st.subheader("Input")
         mode = _input_mode_selector()
-        editor_height = st.slider(
-            "Editor Height",
-            min_value=260,
-            max_value=900,
-            value=420,
-            step=20,
-            help="Resize both input and sanitized output editors.",
-        )
 
         if mode == "📝 Visual Rich Text":
             visual_html = _render_visual_editor(st.session_state.raw_html)
