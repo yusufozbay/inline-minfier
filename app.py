@@ -10,7 +10,6 @@ Optional alternative rich editor:
 from __future__ import annotations
 
 import re
-from typing import Iterable
 
 import streamlit as st
 from bs4 import BeautifulSoup
@@ -163,6 +162,25 @@ def sanitize_html(raw_html: str) -> str:
     return _post_regex_cleanup(cleaned_html)
 
 
+def _format_html_for_multiline_output(cleaned_html: str) -> str:
+    if not cleaned_html:
+        return ""
+
+    # Split adjacent tags onto new lines for editor-friendly readability.
+    readable = re.sub(r"><", ">\n<", cleaned_html)
+    readable = re.sub(r"\n{3,}", "\n\n", readable)
+    return readable.strip()
+
+
+def _preview_html_shell(content: str) -> str:
+    safe_content = content or "<p>No content yet.</p>"
+    return f"""
+    <div style=\"background:#ffffff;color:#0f172a;border:1px solid #d1d5db;border-radius:12px;padding:16px;line-height:1.65;font-size:16px;overflow:auto;\">
+      {safe_content}
+    </div>
+    """
+
+
 def _render_visual_editor(default_value: str) -> str:
     if st_quill is None:
         st.warning(
@@ -210,6 +228,25 @@ def main() -> None:
     st.set_page_config(page_title="HTML Cleaner", layout="wide")
     _ensure_session_defaults()
 
+    st.markdown(
+        """
+        <style>
+        .stTextArea textarea {
+            font-family: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            font-size: 14px;
+            line-height: 1.55;
+        }
+        [data-testid="stTextArea"] textarea {
+            background: #0f172a;
+            color: #e5e7eb;
+            border: 1px solid #334155;
+            border-radius: 12px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     st.title("Rich Text / HTML Bloat Cleaner")
     st.caption(
         "Paste Word/Google Docs content, remove inline styling, and export semantic HTML."
@@ -235,10 +272,17 @@ def main() -> None:
 
     raw_html = st.session_state.raw_html
     cleaned_html = sanitize_html(raw_html)
+    readable_html = _format_html_for_multiline_output(cleaned_html)
 
     with right_col:
         st.subheader("Sanitized Output")
-        st.code(cleaned_html or "", language="html")
+        st.text_area(
+            "Clean HTML (multiline)",
+            value=readable_html,
+            height=420,
+            disabled=True,
+            key="sanitized_output_multiline",
+        )
         st.download_button(
             "Download Clean HTML",
             data=cleaned_html.encode("utf-8"),
@@ -253,11 +297,11 @@ def main() -> None:
 
     with preview_left:
         st.markdown("**Original Input Preview**")
-        html_component(raw_html or "<p>No input yet.</p>", height=320, scrolling=True)
+        html_component(_preview_html_shell(raw_html), height=360, scrolling=True)
 
     with preview_right:
         st.markdown("**Sanitized Output Preview**")
-        html_component(cleaned_html or "<p>No sanitized output yet.</p>", height=320, scrolling=True)
+        html_component(_preview_html_shell(cleaned_html), height=360, scrolling=True)
 
 
 if __name__ == "__main__":
