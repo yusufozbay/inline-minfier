@@ -166,10 +166,10 @@ def _simplify_redundant_markup(soup: BeautifulSoup) -> None:
             wrapper.unwrap()
 
 
-def _unwrap_paragraphs_in_list_items(soup: BeautifulSoup) -> None:
-    # Keep list item content but remove invalid paragraph wrappers inside <li>.
-    for li in soup.find_all("li"):
-        for para in list(li.find_all("p")):
+def _unwrap_paragraphs_in_structural_blocks(soup: BeautifulSoup) -> None:
+    # Keep content but remove paragraph wrappers inside list items and table cells.
+    for container in soup.find_all(["li", "td", "th"]):
+        for para in list(container.find_all("p")):
             para.unwrap()
 
 
@@ -199,7 +199,7 @@ def sanitize_html(raw_html: str) -> str:
     _unwrap_styling_containers(root)
     _clean_all_attributes(root)
     _simplify_redundant_markup(root)
-    _unwrap_paragraphs_in_list_items(root)
+    _unwrap_paragraphs_in_structural_blocks(root)
     _remove_empty_inline_tags(root)
     _remove_empty_blocks(root)
 
