@@ -166,6 +166,13 @@ def _simplify_redundant_markup(soup: BeautifulSoup) -> None:
             wrapper.unwrap()
 
 
+def _unwrap_paragraphs_in_list_items(soup: BeautifulSoup) -> None:
+    # Keep list item content but remove invalid paragraph wrappers inside <li>.
+    for li in soup.find_all("li"):
+        for para in list(li.find_all("p")):
+            para.unwrap()
+
+
 def _post_regex_cleanup(html: str) -> str:
     html = re.sub(r"<p>(?:\s|&nbsp;|\xa0|<br\s*/?>)*</p>", "", html, flags=re.IGNORECASE)
     html = re.sub(
@@ -192,6 +199,7 @@ def sanitize_html(raw_html: str) -> str:
     _unwrap_styling_containers(root)
     _clean_all_attributes(root)
     _simplify_redundant_markup(root)
+    _unwrap_paragraphs_in_list_items(root)
     _remove_empty_inline_tags(root)
     _remove_empty_blocks(root)
 
